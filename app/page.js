@@ -12,7 +12,7 @@ export default function Home() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log(value); // this is where we will add this to a list
+    console.log(value); // this is where we will add this to a list and then display
     setValue("");
   };
 

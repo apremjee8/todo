@@ -14,7 +14,7 @@ export default function Todos() {
   useEffect(() => {
     const getUser = async () => {
       const user = await supabase.auth.getUser();
-      // console.log(user);
+      console.log(user);
       if (user) {
         const userId = user.data.user.id;
         setIsAuthenticated(true);
@@ -27,32 +27,76 @@ export default function Todos() {
   // select all current todos
   useEffect(() => {
     const getData = async () => {
-      const { data } = await supabase.from("todos").select();
-      setTodos(data);
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("todos")
+          .select()
+          .eq("user_id", userId);
+        if (error) throw error;
+        setTodos(data);
+        console.log("data: ", data);
+      } catch {
+        console.log("error: ", error);
+      }
     };
-    getData();
-  });
+    if (userId) {
+      getData();
+    }
+  }, [userId]);
 
   // add new Todo - can probably move to utils file eventually
   const addNewTodo = async (e) => {
     try {
       if (task && userId) {
         e.preventDefault();
-        const { data, error } = await supabase.from("todos").insert({
-          task,
-          user_id: userId,
-        });
+        const { data, error } = await supabase
+          .from("todos")
+          .insert({
+            task,
+            user_id: userId,
+          })
+          .select();
+        if (todos) {
+          setTodos([...data, ...todos]);
+        }
         setTask("");
         if (error) throw error;
+        console.log("new task:", data);
       }
     } catch (error) {
       console.log("error: ", error);
     }
   };
 
+  // delete new Todo
+  const deleteTodo = async (id) => {
+    try {
+      const deleteItem = todos.filter((item) => item.id == id);
+      const remainingTodos = todos.filter((item) => item.id !== id);
+      setTodos(remainingTodos);
+      const { error } = await supabase
+        .from("todos")
+        .delete()
+        .eq("id", deleteItem[0].id);
+    } catch (error) {
+      console.log("error: ", error);
+    }
+
+    // console.log(deleteItem[0].id);
+  };
+
   const renderedTodos = todos.map((item) => {
-    return <div key={item.id}>{item.task}</div>;
+    return (
+      <div key={item.id} className='py-3 px-3 flex justify-between'>
+        <div>{item.task}</div>
+        <button
+          className='bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline'
+          onClick={() => deleteTodo(item.id)}
+        >
+          Delete
+        </button>
+      </div>
+    );
   });
 
   return (
